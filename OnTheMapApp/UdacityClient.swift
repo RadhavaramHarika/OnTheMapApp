@@ -13,9 +13,8 @@ class UdacityClient: NSObject
 {
     
     var sharedSession = URLSession.shared
-    var userID = String()
-    var sessionId = String()
-    
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+
     override init()
     {
         super.init()
@@ -65,9 +64,10 @@ class UdacityClient: NSObject
         return task
     }
     
-    func taskForGETUsersData()
+    func taskForGETUsersData(completionHandler: @escaping (_ result: AnyObject?, _ error:NSError?) -> Void)
     {
-        let urlString = Constants.getSessionURL+Methods.users+"/\(userID)"
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let urlString = Constants.getSessionURL+Methods.users+"/\(appDelegate.userID)"
         let url = URL(string: urlString)
         let request = URLRequest(url: url!)
         let task = sharedSession.dataTask(with: request) {(data,response,error) in
@@ -75,7 +75,8 @@ class UdacityClient: NSObject
             if error != nil
             {
                 print("There was an error with the request")
-                return
+                let userInfo = [NSLocalizedDescriptionKey: error]
+                completionHandler(nil,NSError(domain:"deleteSessionID", code: 1,userInfo: userInfo))
             }
             else
             {
@@ -95,27 +96,12 @@ class UdacityClient: NSObject
                 let range = Range(uncheckedBounds: (5,data.count))
                 let newData = data.subdata(in: range)
                 print(NSString(data:newData, encoding:String.Encoding.utf8.rawValue)!)
+                self.convertData(newData, completionHandlerForConvertData: completionHandler)
             }
         }
         task.resume()
     }
     
-    private func convertData(_ data: Data, completionHandlerForConvertData: (_ result:AnyObject?,_ error: NSError?) -> Void)
-    {
-        var parsedData:AnyObject!
-        do{
-            parsedData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject
-            if JSONSerialization.isValidJSONObject(parsedData)
-            {
-                completionHandlerForConvertData(parsedData,nil)
-            }
-        }
-        catch{
-            let userInfo = [NSLocalizedDescriptionKey: "Cannot parse the \(data) into json Format"]
-            completionHandlerForConvertData(nil,NSError(domain:"convertDataWithCompletionHandler", code:1,userInfo: userInfo))
-        }
-        completionHandlerForConvertData(parsedData,nil)
-    }
     
     func taskForDELETESessionID(_ method:String,completionHandlerForDELETESession:@escaping (_ results: AnyObject?,_ error: NSError?) -> Void) -> URLSessionDataTask
     {
@@ -158,30 +144,23 @@ class UdacityClient: NSObject
         return task
     }
     
-    private func urlFromParameters(_ parameters:[String:AnyObject]?, withPathExtension: String?) -> URL
+    func taskForGETStudentLocations(withObjectID: String?,completionHandlerForGetStudentLocation: @escaping(_ results: AnyObject?,_ error: NSError?) -> Void) -> URLSessionDataTask
     {
-        var components = URLComponents()
-        components.scheme = Constants.ApiScheme
-        components.host = Constants.ApiHost
-        components.path = Constants.ApiPath
-        components.queryItems = [URLQueryItem]()
-        
-        for (key,value) in parameters!
+        var request:NSMutableURLRequest!
+        let parametersMethod:[String:AnyObject] = [ParameterKeys.limitKey:ParameterValues.limitValue as AnyObject,
+                                                   ParameterKeys.orderKey:ParameterValues.orderValue as AnyObject]
+        if withObjectID != nil
         {
-            let queryItem = URLQueryItem(name: key, value: "\(value)")
-            components.queryItems?.append(queryItem)
+            request = NSMutableURLRequest(url: URL(string: "https://parse.udacity.com/parse/classes/StudentLocation?where=%7B%22uniqueKey%22%3A%22\(withObjectID)%22%7D")!)
         }
-        print(components.url!)
-        return components.url!
-    }
-    
-    func taskForGETStudentLocations(method: String,parameters: [String:AnyObject]?, completionHandlerForGetStudentLocation: @escaping(_ results: AnyObject?,_ error: NSError?) -> Void) -> URLSessionDataTask
-    {
-        let methodParameters = parameters
-        let request = NSMutableURLRequest(url: urlFromParameters(methodParameters, withPathExtension: nil))
-        let req = NSMutableURLRequest(url: URL(string:"https://parse.udacity.com/parse/classes/StudentLocation?limit=100&order=-updateAt")!)
-        req.addValue(HttpValues.parseAppID, forHTTPHeaderField: HttpFields.parseAppIDKey)
-        req.addValue(HttpValues.parseRestApi, forHTTPHeaderField: HttpFields.parseRestAPIKey)
+        else
+        {
+//            request = NSMutableURLRequest(url: URL(string:"https://parse.udacity.com/parse/classes/StudentLocation?limit=100&order=-updatedAt")!)
+            request = NSMutableURLRequest(url: urlFromParameters(parametersMethod, withPathExtension: nil))
+  
+        }
+        request.addValue(HttpValues.parseAppID, forHTTPHeaderField: HttpFields.parseAppIDKey)
+        request.addValue(HttpValues.parseRestApi, forHTTPHeaderField: HttpFields.parseRestAPIKey)
         let task = sharedSession.dataTask(with: request as URLRequest) {(data, response, error) in
             
             if error != nil
@@ -201,7 +180,7 @@ class UdacityClient: NSObject
                 print("Cannot find the data")
                 return
             }
-            let range = Range(uncheckedBounds: (5,data.count-5))
+            let range = Range(uncheckedBounds: (0,data.count))
             let newData = data.subdata(in: range)
             self.convertData(newData, completionHandlerForConvertData:completionHandlerForGetStudentLocation)
             
@@ -210,14 +189,24 @@ class UdacityClient: NSObject
         return task
     }
     
-    func taskToPOSTStudentLocation(method:String, jsonBody:String, completionHandlerForPOSTStudentLocation:@escaping(_ results: AnyObject?,_ error:NSError?) -> Void) -> URLSessionDataTask
+    func taskToPOSTStudentLocation(jsonBody:[String:AnyObject], completionHandlerForPOSTStudentLocation:@escaping(_ results: AnyObject?,_ error:NSError?) -> Void) -> URLSessionDataTask
     {
-        let request = NSMutableURLRequest(url: urlFromParameters([:], withPathExtension: method))
+        let userInfo = jsonBody
+        var info: Data!
+        do{
+            info = try JSONSerialization.data(withJSONObject: userInfo, options: JSONSerialization.WritingOptions.prettyPrinted)
+        }
+        catch
+        {
+            print("Cannot encode the data")
+            
+        }
+        let request = NSMutableURLRequest(url: urlFromParameters([:],withPathExtension: nil))
         request.httpMethod = "POST"
         request.addValue(HttpValues.parseAppID, forHTTPHeaderField: HttpFields.parseAppIDKey)
         request.addValue(HttpValues.parseRestApi, forHTTPHeaderField:HttpFields.parseRestAPIKey)
         request.addValue(HttpValues.jsonValue, forHTTPHeaderField: HttpFields.contentTypeField)
-        request.httpBody = jsonBody.data(using: String.Encoding.utf8)
+        request.httpBody = info
         
         let task = sharedSession.dataTask(with: request as URLRequest) {(data,response,error) in
             
@@ -241,7 +230,6 @@ class UdacityClient: NSObject
             
             let range = Range(uncheckedBounds: (5, data.count))
             let newData = data.subdata(in: range)
-            completionHandlerForPOSTStudentLocation(newData as AnyObject,nil)
             self.convertData(newData, completionHandlerForConvertData: completionHandlerForPOSTStudentLocation)
             
         }
@@ -285,6 +273,40 @@ class UdacityClient: NSObject
         task.resume()
         
         return task
+    }
+    
+    private func urlFromParameters(_ parameters:[String:AnyObject]?, withPathExtension:String? = nil) -> URL
+    {
+        var components = URLComponents()
+        components.scheme = Constants.ApiScheme
+        components.host = Constants.ApiHost
+        components.path = Constants.ApiPath + (withPathExtension ?? "")
+        components.queryItems = [URLQueryItem]()
+        
+        for (key,value) in parameters!
+        {
+            let queryItem = URLQueryItem(name: key, value: "\(value)")
+            components.queryItems?.append(queryItem)
+        }
+        print(components.url!)
+        return components.url!
+    }
+    
+    private func convertData(_ data: Data, completionHandlerForConvertData: (_ result:AnyObject?,_ error: NSError?) -> Void)
+    {
+        var parsedData:AnyObject!
+        do{
+            parsedData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject
+            if JSONSerialization.isValidJSONObject(parsedData)
+            {
+                completionHandlerForConvertData(parsedData,nil)
+            }
+        }
+        catch{
+            let userInfo = [NSLocalizedDescriptionKey: "Cannot parse the \(data) into json Format"]
+            completionHandlerForConvertData(nil,NSError(domain:"convertDataWithCompletionHandler", code:1,userInfo: userInfo))
+        }
+        completionHandlerForConvertData(parsedData,nil)
     }
 
     

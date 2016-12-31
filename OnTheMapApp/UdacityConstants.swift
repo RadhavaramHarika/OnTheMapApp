@@ -24,7 +24,6 @@ extension UdacityClient{
     struct  Methods
     {
         static let session = "/session"
-        static let parseClass = "classes/StudentLocation"
         static let users = "/users"
 
     }
@@ -75,6 +74,11 @@ extension UdacityClient{
         static let orderValue = "-updatedAt"
     }
     
+    struct userInfoKeys
+    {
+       static let firstname = "nickname"
+       static let lastname = "last_name"
+    }
     
     struct ResponseKeys
     {

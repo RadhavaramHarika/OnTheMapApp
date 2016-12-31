@@ -12,7 +12,6 @@ import MapKit
 class MapViewController: UIViewController, MKMapViewDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
-    var studentLocations = [StudentLocation]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,39 +22,37 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     {
         super.viewWillAppear(animated)
         mapView.delegate = self
-//        self.navigationController?.dismiss(animated: true, completion: nil)
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout",style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.logoutAction))
-        let pinButton = UIBarButtonItem(image: UIImage(named: "PinIcon"),style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.pinIconAction))
-        let refreshButton = UIBarButtonItem(image: UIImage(named: "RefreshIcon"),style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.refreshAction))
-
-        self.navigationItem.rightBarButtonItems = [pinButton,refreshButton]
-        let methodParameters:[String:AnyObject] = [
-            UdacityClient.ParameterKeys.limitKey:UdacityClient.ParameterValues.limitValue as AnyObject]
-//            UdacityClient.ParameterKeys.skipKey:UdacityClient.ParameterValues.skipValue as AnyObject]
-        let annotations = self.getStudentLocations(params: methodParameters)
-        mapView.addAnnotations(annotations)
-        
+        self.setNavigationBar()
+        self.getStudentLocation()
     }
     
-    func getStudentLocations(params: [String:AnyObject]) -> [MKPointAnnotation]
+    func getStudentLocation()
     {
+        var studentLocations = [StudentDetail]()
+            UdacityClient.shareInstance().getStudentLocations(withObjectID: nil) {(results,error) in
+                
+                if error != nil
+                {
+                    print(error!)
+                }
+                else
+                {
+                    DispatchQueue.main.async
+                    {
+                        if let studentResults = results
+                        {
+                            studentLocations = studentResults as! [StudentDetail]
+                        }
+                    }
+                }
+            }
 
         var annotations = [MKPointAnnotation]()
 
-        UdacityClient.shareInstance().getStudentLocations(parameters: params as [String : AnyObject]) {(results,error) in
-                
-                if let studentLocations = results 
-                {
-                    self.studentLocations = studentLocations as! [StudentLocation]
-                }else{
-                    print(error!)
-            }
-            }
-        
         for eachStudent in studentLocations
         {
-            let lat = CLLocationDegrees(eachStudent.latitude)
-            let long = CLLocationDegrees(eachStudent.longitude)
+            let lat = CLLocationDegrees(eachStudent.latitude!)
+            let long = CLLocationDegrees(eachStudent.longitude!)
             let studentCoordinate = CLLocationCoordinate2D(latitude: lat,longitude: long)
             
             let annotation = MKPointAnnotation()
@@ -65,41 +62,45 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             
             annotations.append(annotation)
         }
-        return annotations
+        self.mapView.addAnnotations(annotations)
     }
     
+    func setNavigationBar()
+    {
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout",style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.logoutAction))
+        let pinButton = UIBarButtonItem(image: UIImage(named: "PinIcon"),style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.pinIconAction))
+        let refreshButton = UIBarButtonItem(image: UIImage(named: "RefreshIcon"),style: UIBarButtonItemStyle.plain,target:self,action: #selector(self.refreshAction))
+        
+        self.navigationItem.rightBarButtonItems = [pinButton,refreshButton]
+    }
+
     func logoutAction()
     {
         UdacityClient.shareInstance().deletingSessionId() {(results,error) in
             
             if error != nil
             {
-                UdacityClient.shareInstance().userID = ""
+                (UIApplication.shared.delegate as! AppDelegate).userID = ""
                 self.dismiss(animated: true, completion: nil)
             }
-            
         }
-
     }
     
     func pinIconAction()
     {
-        self.dismiss(animated: true, completion: nil)
         let InfoVc = self.storyboard?.instantiateViewController(withIdentifier: "InformationViewController") as! InformationViewController
         self.present(InfoVc,animated: true,completion: nil)
     }
     
     func refreshAction()
     {
-        let methodParams:[String:AnyObject] = [UdacityClient.ParameterKeys.orderKey:UdacityClient.ParameterValues.orderValue as AnyObject]
-        let annotations = getStudentLocations(params: methodParams)
-        self.mapView.reloadInputViews()
+        getStudentLocation()
+        self.reloadInputViews()
     }
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         
         let reuseId = "pin"
-        
         var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
         
         if pinView == nil {
@@ -116,7 +117,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         return pinView
     }
-    
     
     // This delegate method is implemented to respond to taps. It opens the system browser
     // to the URL specified in the annotationViews subtitle property.

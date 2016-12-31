@@ -11,9 +11,7 @@ import UIKit
 
 extension UdacityClient
 {
-    func getSessionID(userName: String, password: String, completionHandlerForSession: @escaping(_ results:AnyObject?,_ error: NSError?) -> Void)
-    {
-        let jsonBody = "{\"\(jsonBodyKeys.udacityKey)\":{\"\(jsonBodyKeys.userNameKey)\":\"\(userName)\",\"\(jsonBodyKeys.passwordKey)\":\"\(password)\"}}"
+    func getSessionID(userName: String, password: String, completionHandlerForSession: @escaping(_ results:AnyObject?,_ error: NSError?) -> Void){
         let dict = [jsonBodyKeys.userNameKey:userName,
                     jsonBodyKeys.passwordKey:password]
         let task = taskToPOSTSession(jsonBody:dict) {(results, error) in
@@ -31,14 +29,14 @@ extension UdacityClient
                     {
                         if let userKey = accounts[ResponseKeys.key] as? String
                         {
-                            self.userID = userKey
+                            self.appDelegate.userID = userKey
                         }
                     }
                     if let session = sessionResults[ResponseKeys.session] as? [String:AnyObject]
                     {
                         if let sessionID = session["id"] as? String
                         {
-                            self.sessionId = sessionID
+                            self.appDelegate.sessionId = sessionID
                         }
                     }
                     completionHandlerForSession(sessionResults as AnyObject,nil)
@@ -46,16 +44,40 @@ extension UdacityClient
                 }
                 else
                 {
-                    completionHandlerForSession(nil,error)
+                    completionHandlerForSession(nil,NSError(domain: "getSessionID",code:1,userInfo: [NSLocalizedDescriptionKey:"Could not parse the data"]))
                 }
                 
             }
         }
     }
     
-    
-    func deletingSessionId(completionHandlerFordeletingSession:@escaping(_ results:AnyObject?,_ error:NSError?) -> Void)
+    func getUserData(completionHandlerForUserData: @escaping(_ results: AnyObject?,_ error:NSError?) -> Void)
     {
+        taskForGETUsersData() {(results,error) in
+          
+            if error != nil
+            {
+                completionHandlerForUserData(nil,error)
+            }
+            else
+            {
+                if let result = results
+                {
+                    self.appDelegate.firstName = (results?[userInfoKeys.firstname] as? String)!
+                    self.appDelegate.lastName = (results?[userInfoKeys.lastname] as? String)!
+
+                    completionHandlerForUserData(result,nil)
+                }
+                else
+                {
+                    completionHandlerForUserData(nil,NSError(domain: "UserInfo", code: 1, userInfo:[NSLocalizedDescriptionKey:"Could not parse the data"]))
+                 }
+            
+            }
+    }
+}
+    
+      func deletingSessionId(completionHandlerFordeletingSession:@escaping(_ results:AnyObject?,_ error:NSError?) -> Void){
         let methodString = Methods.session
         
         let task = taskForDELETESessionID(methodString) {(results,error) in
@@ -79,10 +101,19 @@ extension UdacityClient
         }
     }
     
-    func getStudentLocations(parameters: [String:AnyObject]?,completionHandlerForGETStudentLocation: @escaping(_ results: AnyObject?,_ error: NSError?) -> Void)
+
+    func getStudentLocations(withObjectID:String?,completionHandlerForGETStudentLocation: @escaping(_ results: AnyObject?,_ error: NSError?) -> Void)
     {
-        let methodString = Methods.parseClass
-        let task = taskForGETStudentLocations(method: methodString, parameters: [:]) {(results, error) in
+        var objId:String?
+        if withObjectID != nil
+        {
+            objId = withObjectID
+        }
+        else
+        {
+           objId = nil
+        }
+        let task = taskForGETStudentLocations(withObjectID: objId) {(results, error) in
             
             if error != nil
             {
@@ -92,7 +123,8 @@ extension UdacityClient
             {
                 if let studentResults = results?[ResponseKeys.results]
                 {
-                    let studentLocations = StudentLocation.studentLocationsFromResults(studentResults as! [[String : AnyObject]])
+                    print(studentResults)
+                    let studentLocations = StudentDetail.studentLocationsFromResults(studentResults as! [[String : AnyObject]])
                     completionHandlerForGETStudentLocation(studentLocations as AnyObject?,nil)
                 }
                 else
@@ -104,11 +136,10 @@ extension UdacityClient
         }
     }
     
-    func postStudentLocation(student: StudentLocation,completionHandlerForPostingStudentLocation:@escaping(_ results: AnyObject?,_ error: NSError?) -> Void)
+    func postStudentLocation(json: [String:AnyObject],completionHandlerForPostingStudentLocation:@escaping(_ results: AnyObject?,_ error: NSError?) -> Void)
     {
-        let methodString = Methods.parseClass
-        let jsonBody = "{\"\(ResponseKeys.uniqueKey)\":\"\(student.uniqueKey)\",\"\(ResponseKeys.firstName)\":\"\(student.firstName)\",\"\(ResponseKeys.lastName):\"\(student.lastName)\",\"\(ResponseKeys.mapString)\":\"\(student.mapString)\",\"\(ResponseKeys.mediaURL)\":\"\(student.mediaURL)\",\"\(ResponseKeys.latitude)\":\"\(student.latitude)\",\"\(ResponseKeys.longitude)\":\"\(student.longitude)\"}"
-        let task = taskToPOSTStudentLocation(method: methodString, jsonBody: jsonBody) {(results, error) in
+        let httpBody = json
+        let task = taskToPOSTStudentLocation(jsonBody: httpBody) {(results, error) in
             
             if error != nil
             {
@@ -128,9 +159,9 @@ extension UdacityClient
         }
     }
     
-    func updateStudentLocation(student: StudentLocation,completionHandlerForUpdatingStudentLocation: @escaping(_ results:AnyObject?,_ error: NSError?) -> Void)
+    func updateStudentLocation(student: StudentDetail,completionHandlerForUpdatingStudentLocation: @escaping(_ results:AnyObject?,_ error: NSError?) -> Void)
     {
-        let methodString = Methods.parseClass+"/\(student.objectId)"
+        let methodString = "/\(student.objectId)"
         print(method)
         
         let jsonBody = "{\(ResponseKeys.uniqueKey):\(student.uniqueKey),\(ResponseKeys.firstName):\(student.firstName),\(ResponseKeys.lastName):\(student.lastName),\(ResponseKeys.mapString):\(student.mapString),\(ResponseKeys.mediaURL):\(student.mediaURL),\(ResponseKeys.latitude):\(student.latitude),\(ResponseKeys.longitude):\(student.longitude)}"
@@ -155,17 +186,4 @@ extension UdacityClient
         }
     }
     
-    private func convertData(_ data: Data, completionHandlerForConvertData: (_ result:AnyObject?,_ error: NSError?) -> Void)
-    {
-        var parsedData:[String: AnyObject]! = nil
-        do{
-            parsedData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String:AnyObject]
-        }
-        catch{
-            let userInfo = [NSLocalizedDescriptionKey: "Cannot parse the \(data) into json Format"]
-            completionHandlerForConvertData(nil,NSError(domain:"convertDataWithCompletionHandler", code:1,userInfo: userInfo))
-        }
-        completionHandlerForConvertData(parsedData as AnyObject?,nil)
-    }
-    
-}
+  }

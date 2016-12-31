@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E7E6032D1E09201000296B93 /* StudentLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E6032C1E09201000296B93 /* StudentLocation.swift */; };
+		E7E6032D1E09201000296B93 /* StudentDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E6032C1E09201000296B93 /* StudentDetail.swift */; };
 		E7E6032F1E096AAE00296B93 /* ClientFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E6032E1E096AAE00296B93 /* ClientFile.swift */; };
+		E7E815BD1E14FD77009E0B83 /* StudentLocations.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E815BC1E14FD77009E0B83 /* StudentLocations.swift */; };
 		E7EA27BD1E0A581C001EE432 /* NetworkReachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EA27BC1E0A581C001EE432 /* NetworkReachability.swift */; };
 		E7EA27C11E0AE006001EE432 /* UsersTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EA27C01E0AE006001EE432 /* UsersTableViewController.swift */; };
 		E7EA27C31E0AE029001EE432 /* MapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EA27C21E0AE029001EE432 /* MapViewController.swift */; };
@@ -44,8 +45,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		E7E6032C1E09201000296B93 /* StudentLocation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StudentLocation.swift; sourceTree = "<group>"; };
+		E7E6032C1E09201000296B93 /* StudentDetail.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StudentDetail.swift; sourceTree = "<group>"; };
 		E7E6032E1E096AAE00296B93 /* ClientFile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClientFile.swift; sourceTree = "<group>"; };
+		E7E815BC1E14FD77009E0B83 /* StudentLocations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StudentLocations.swift; sourceTree = "<group>"; };
 		E7EA27BC1E0A581C001EE432 /* NetworkReachability.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkReachability.swift; sourceTree = "<group>"; };
 		E7EA27C01E0AE006001EE432 /* UsersTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UsersTableViewController.swift; sourceTree = "<group>"; };
 		E7EA27C21E0AE029001EE432 /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
@@ -99,7 +101,8 @@
 			children = (
 				E7EDB5241E06DBEA009396A4 /* UdacityClient.swift */,
 				E7E6032E1E096AAE00296B93 /* ClientFile.swift */,
-				E7E6032C1E09201000296B93 /* StudentLocation.swift */,
+				E7E815BC1E14FD77009E0B83 /* StudentLocations.swift */,
+				E7E6032C1E09201000296B93 /* StudentDetail.swift */,
 				E7EED4321E0830A4007BCA61 /* UdacityConstants.swift */,
 			);
 			name = Udacity;
@@ -340,6 +343,7 @@
 				E7F25EEB1E04B80800C48867 /* LoginViewController.swift in Sources */,
 				E7EA32251E0C15C4007E1318 /* InformationViewController.swift in Sources */,
 				E7EED4331E0830A4007BCA61 /* UdacityConstants.swift in Sources */,
+				E7E815BD1E14FD77009E0B83 /* StudentLocations.swift in Sources */,
 				E7EA27C11E0AE006001EE432 /* UsersTableViewController.swift in Sources */,
 				E7EA27BD1E0A581C001EE432 /* NetworkReachability.swift in Sources */,
 				E7EA32231E0C114E007E1318 /* UsersTableViewCell.swift in Sources */,
@@ -347,7 +351,7 @@
 				E7E6032F1E096AAE00296B93 /* ClientFile.swift in Sources */,
 				E7F25EE91E04B80800C48867 /* AppDelegate.swift in Sources */,
 				E7EA32291E0C174C007E1318 /* InformationView.swift in Sources */,
-				E7E6032D1E09201000296B93 /* StudentLocation.swift in Sources */,
+				E7E6032D1E09201000296B93 /* StudentDetail.swift in Sources */,
 				E7EDB5251E06DBEA009396A4 /* UdacityClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
